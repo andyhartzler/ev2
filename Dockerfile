@@ -1,7 +1,11 @@
-# Mautic 6 for Railway - Simplified
+# Mautic 6 for Railway
 FROM mautic/mautic:6-apache
 
 LABEL maintainer="MO Young Democrats"
+
+# Fix Apache MPM conflict - disable all MPMs except prefork
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
+    a2enmod mpm_prefork 2>/dev/null || true
 
 # PHP Configuration
 ENV PHP_INI_VALUE_MEMORY_LIMIT=512M
@@ -23,5 +27,4 @@ ENV MAUTIC_MESSENGER_DSN_FAILED=doctrine://default
 COPY --chown=www-data:www-data themes/ /var/www/html/docroot/themes/
 COPY --chown=www-data:www-data plugins/ /var/www/html/docroot/plugins/
 
-# Railway will map its PORT to container's port 80 automatically
 EXPOSE 80
