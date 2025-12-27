@@ -16,5 +16,5 @@ if [ ! -f /etc/apache2/mods-enabled/mpm_prefork.conf ]; then
     ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
 fi
 
-# Call the original entrypoint with all arguments
-exec /docker-entrypoint.sh "$@"
+# Call the original mautic entrypoint with all arguments
+exec /entrypoint.sh "$@"
