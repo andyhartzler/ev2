@@ -1,14 +1,66 @@
 # Mautic Self-Hosted
 
-Self-hosted [Mautic](https://mautic.org) marketing automation platform using Docker.
+Self-hosted [Mautic](https://mautic.org) marketing automation platform.
 
-## Requirements
+## Railway Deployment
+
+### Prerequisites
+
+1. A Railway account
+2. A MySQL service already running on Railway
+
+### Deploy to Railway
+
+1. **Create a new service** from this GitHub repo in your Railway project
+
+2. **Add these environment variables** to your Mautic service:
+
+   ```
+   # Database connection (use your Railway MySQL values)
+   MAUTIC_DB_HOST=mysql.railway.internal
+   MAUTIC_DB_PORT=3306
+   MAUTIC_DB_DATABASE=railway
+   MAUTIC_DB_USER=root
+   MAUTIC_DB_PASSWORD=<your-mysql-password>
+
+   # Mautic configuration
+   MAUTIC_MESSENGER_DSN_EMAIL=doctrine://default
+   MAUTIC_MESSENGER_DSN_HIT=doctrine://default
+   ```
+
+3. **Generate a domain** in Railway's service settings
+
+4. **Access your Mautic instance** and complete the installation wizard
+
+### Railway Environment Variables Reference
+
+| Variable | Railway Value |
+|----------|---------------|
+| `MAUTIC_DB_HOST` | `mysql.railway.internal` (or `MYSQLHOST`) |
+| `MAUTIC_DB_PORT` | `3306` (or `MYSQLPORT`) |
+| `MAUTIC_DB_DATABASE` | `railway` (or `MYSQLDATABASE`) |
+| `MAUTIC_DB_USER` | `root` (or `MYSQLUSER`) |
+| `MAUTIC_DB_PASSWORD` | Your MySQL password (or `MYSQLPASSWORD`) |
+
+You can reference Railway's MySQL variables directly:
+```
+MAUTIC_DB_HOST=${{MySQL.MYSQLHOST}}
+MAUTIC_DB_PORT=${{MySQL.MYSQLPORT}}
+MAUTIC_DB_DATABASE=${{MySQL.MYSQLDATABASE}}
+MAUTIC_DB_USER=${{MySQL.MYSQLUSER}}
+MAUTIC_DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+```
+
+---
+
+## Local Development (Docker Compose)
+
+### Requirements
 
 - Docker and Docker Compose
 - At least 2GB RAM
-- 10GB disk space (recommended)
 
-## Quick Start
+### Quick Start
 
 1. **Copy the environment file and configure:**
 
@@ -16,9 +68,7 @@ Self-hosted [Mautic](https://mautic.org) marketing automation platform using Doc
    cp .env.example .env
    ```
 
-   Edit `.env` and set secure passwords:
-   - `MYSQL_ROOT_PASSWORD` - Database root password
-   - `MYSQL_PASSWORD` - Mautic database user password
+   Edit `.env` and set secure passwords.
 
 2. **Start the services:**
 
@@ -28,9 +78,9 @@ Self-hosted [Mautic](https://mautic.org) marketing automation platform using Doc
 
 3. **Access Mautic:**
 
-   Open http://localhost:8080 in your browser and complete the installation wizard.
+   Open http://localhost:8080 in your browser.
 
-## Services
+### Services
 
 | Service | Description |
 |---------|-------------|
@@ -39,28 +89,7 @@ Self-hosted [Mautic](https://mautic.org) marketing automation platform using Doc
 | `mautic_cron` | Scheduled task processor |
 | `mautic_worker` | Background job processor |
 
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MYSQL_ROOT_PASSWORD` | Database root password | (required) |
-| `MYSQL_DATABASE` | Database name | `mautic` |
-| `MYSQL_USER` | Database user | `mautic` |
-| `MYSQL_PASSWORD` | Database password | (required) |
-| `MAUTIC_PORT` | Web interface port | `8080` |
-| `DOCKER_MAUTIC_LOAD_TEST_DATA` | Load sample data | `false` |
-
-### Data Persistence
-
-Data is stored in:
-- `./mautic/config` - Mautic configuration
-- `./mautic/logs` - Application logs
-- `./mautic/media` - Uploaded files and images
-- Docker volume `mysql-data` - Database files
-
-## Management Commands
+### Management Commands
 
 ```bash
 # View logs
@@ -69,31 +98,18 @@ docker compose logs -f
 # Stop services
 docker compose down
 
-# Stop and remove volumes (WARNING: deletes all data)
-docker compose down -v
-
 # Update to latest Mautic 6.x
 docker compose pull
 docker compose up -d
-
-# Access Mautic CLI
-docker compose exec mautic_web php bin/console
 ```
 
-## Production Considerations
-
-For production deployments:
-
-1. **Use a reverse proxy** (nginx/traefik) with SSL/TLS
-2. **Set strong passwords** in `.env`
-3. **Configure backups** for the database and media volumes
-4. **Consider RabbitMQ** for high-volume message queuing (see [official examples](https://github.com/mautic/docker-mautic/tree/main/examples))
+---
 
 ## Version Info
 
-- **Mautic**: 6.x (latest stable)
-- **MariaDB**: 11.4 LTS
-- **PHP**: 8.3 (included in Mautic image)
+- **Mautic**: 6.x (latest stable - 6.0.7)
+- **PHP**: 8.3 (included in image)
+- **Database**: MySQL 8.x / MariaDB 11.x
 
 ## Resources
 
