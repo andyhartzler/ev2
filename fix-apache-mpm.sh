@@ -28,9 +28,14 @@ echo "[MOYD] Apache MPM fix applied."
 echo "[MOYD] Checking if auto-install is needed..."
 
 # Handle alternate variable names (Railway uses different names)
-# Export these so the original entrypoint can see them
+# Map Railway's MYSQL_* variables to MAUTIC_DB_* variables
+# Priority: MAUTIC_DB_* > MYSQL_* > MYSQL* (no underscore)
 export MAUTIC_URL="${MAUTIC_URL:-$MAUTIC_SITE_URL}"
-export MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-$MAUTIC_DB_DATABASE}"
+export MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-${MAUTIC_DB_DATABASE:-${MYSQL_DATABASE:-$MYSQLDATABASE}}}"
+export MAUTIC_DB_HOST="${MAUTIC_DB_HOST:-${MYSQL_HOST:-$MYSQLHOST}}"
+export MAUTIC_DB_PORT="${MAUTIC_DB_PORT:-${MYSQL_PORT:-${MYSQLPORT:-3306}}}"
+export MAUTIC_DB_USER="${MAUTIC_DB_USER:-${MYSQL_USER:-${MYSQLUSER:-root}}}"
+export MAUTIC_DB_PASSWORD="${MAUTIC_DB_PASSWORD:-${MYSQL_PASSWORD:-${MYSQLPASSWORD:-$MYSQL_ROOT_PASSWORD}}}"
 
 echo "[MOYD] Environment variables:"
 echo "[MOYD]   MAUTIC_URL=${MAUTIC_URL:-not set}"
