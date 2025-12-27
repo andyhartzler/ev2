@@ -1,0 +1,13 @@
+# Mautic Database Configuration
+# These reference variables from .env file
+MAUTIC_DB_HOST=${MYSQL_HOST}
+MAUTIC_DB_PORT=${MYSQL_PORT}
+MAUTIC_DB_DATABASE=${MYSQL_DATABASE}
+MAUTIC_DB_USER=${MYSQL_USER}
+MAUTIC_DB_PASSWORD=${MYSQL_PASSWORD}
+
+# Messenger Configuration (async queue processing)
+# Using doctrine for database-backed queuing (simpler setup)
+# For production with high volume, consider RabbitMQ
+MAUTIC_MESSENGER_DSN_EMAIL=doctrine://default
+MAUTIC_MESSENGER_DSN_HIT=doctrine://default
