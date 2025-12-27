@@ -28,13 +28,18 @@ echo "[MOYD] Apache MPM fix applied."
 echo "[MOYD] Checking if auto-install is needed..."
 
 # Handle alternate variable names (Railway uses different names)
-MAUTIC_URL="${MAUTIC_URL:-$MAUTIC_SITE_URL}"
-MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-$MAUTIC_DB_DATABASE}"
+# Export these so the original entrypoint can see them
+export MAUTIC_URL="${MAUTIC_URL:-$MAUTIC_SITE_URL}"
+export MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-$MAUTIC_DB_DATABASE}"
 
-echo "[MOYD] MAUTIC_URL=${MAUTIC_URL:-not set}"
-echo "[MOYD] MAUTIC_DB_HOST=${MAUTIC_DB_HOST:-not set}"
-echo "[MOYD] MAUTIC_DB_NAME=${MAUTIC_DB_NAME:-not set}"
-echo "[MOYD] MAUTIC_ADMIN_PASSWORD is ${MAUTIC_ADMIN_PASSWORD:+set}${MAUTIC_ADMIN_PASSWORD:-not set}"
+echo "[MOYD] Environment variables:"
+echo "[MOYD]   MAUTIC_URL=${MAUTIC_URL:-not set}"
+echo "[MOYD]   MAUTIC_DB_HOST=${MAUTIC_DB_HOST:-not set}"
+echo "[MOYD]   MAUTIC_DB_PORT=${MAUTIC_DB_PORT:-3306}"
+echo "[MOYD]   MAUTIC_DB_NAME=${MAUTIC_DB_NAME:-not set}"
+echo "[MOYD]   MAUTIC_DB_USER=${MAUTIC_DB_USER:-not set}"
+echo "[MOYD]   MAUTIC_DB_PASSWORD=$([ -n "$MAUTIC_DB_PASSWORD" ] && echo '[SET]' || echo 'not set')"
+echo "[MOYD]   MAUTIC_ADMIN_PASSWORD=$([ -n "$MAUTIC_ADMIN_PASSWORD" ] && echo '[SET]' || echo 'not set')"
 
 # Check if Mautic is already installed
 NEEDS_INSTALL=false
@@ -65,16 +70,45 @@ if [ "$NEEDS_INSTALL" = true ]; then
 
         # Wait for MySQL (the original entrypoint also does this, but we need it first)
         echo "[MOYD] Waiting for MySQL at ${MAUTIC_DB_HOST}:${MAUTIC_DB_PORT:-3306}..."
-        MAX_TRIES=60
+        echo "[MOYD] Connecting as user: ${MAUTIC_DB_USER}"
+
+        # First check if we can resolve the hostname
+        echo "[MOYD] Testing DNS resolution for ${MAUTIC_DB_HOST}..."
+        if getent hosts "${MAUTIC_DB_HOST}" > /dev/null 2>&1; then
+            echo "[MOYD] DNS resolution successful: $(getent hosts ${MAUTIC_DB_HOST})"
+        else
+            echo "[MOYD] WARNING: Cannot resolve ${MAUTIC_DB_HOST} via DNS"
+        fi
+
+        MAX_TRIES=30
         TRIES=0
         while [ $TRIES -lt $MAX_TRIES ]; do
-            if php -r "try { new PDO('mysql:host=${MAUTIC_DB_HOST};port=${MAUTIC_DB_PORT:-3306}', '${MAUTIC_DB_USER}', '${MAUTIC_DB_PASSWORD}'); echo 'OK'; } catch(Exception \$e) { exit(1); }" 2>/dev/null | grep -q "OK"; then
+            # Try PDO connection with error output for debugging
+            RESULT=$(php -r "
+                try {
+                    \$pdo = new PDO(
+                        'mysql:host=${MAUTIC_DB_HOST};port=${MAUTIC_DB_PORT:-3306}',
+                        '${MAUTIC_DB_USER}',
+                        '${MAUTIC_DB_PASSWORD}'
+                    );
+                    echo 'OK';
+                } catch(Exception \$e) {
+                    echo 'ERROR: ' . \$e->getMessage();
+                }
+            " 2>&1)
+
+            if echo "$RESULT" | grep -q "^OK"; then
                 echo "[MOYD] MySQL is ready!"
                 break
             fi
-            echo "[MOYD] MySQL not ready (attempt $TRIES/$MAX_TRIES), waiting..."
-            sleep 2
+
             TRIES=$((TRIES + 1))
+            if [ $TRIES -eq 1 ] || [ $((TRIES % 10)) -eq 0 ]; then
+                echo "[MOYD] MySQL connection attempt $TRIES/$MAX_TRIES: $RESULT"
+            else
+                echo "[MOYD] MySQL not ready (attempt $TRIES/$MAX_TRIES), waiting..."
+            fi
+            sleep 3
         done
 
         if [ $TRIES -lt $MAX_TRIES ]; then
