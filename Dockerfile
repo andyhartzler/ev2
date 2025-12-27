@@ -4,8 +4,11 @@ FROM mautic/mautic:latest
 # APACHE MPM FIX & AUTO-INSTALL ENTRYPOINT
 # ============================================
 COPY fix-apache-mpm.sh /fix-apache-mpm.sh
-RUN chmod +x /fix-apache-mpm.sh
-ENTRYPOINT ["/fix-apache-mpm.sh"]
+RUN chmod +x /fix-apache-mpm.sh && \
+    sed -i 's/\r$//' /fix-apache-mpm.sh
+# Override both ENTRYPOINT and CMD to ensure our script runs
+ENTRYPOINT ["/bin/bash", "/fix-apache-mpm.sh"]
+CMD []
 
 # Set timezone
 ENV PHP_INI_DATE_TIMEZONE='UTC'
