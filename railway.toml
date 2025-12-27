@@ -5,6 +5,5 @@ dockerfilePath = "Dockerfile"
 [deploy]
 healthcheckPath = "/"
 healthcheckTimeout = 300
-startCommand = "apache2-foreground"
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5
