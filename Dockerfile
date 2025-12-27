@@ -1,32 +1,20 @@
-# Mautic 6 for Railway
-FROM mautic/mautic:6-apache
+FROM mautic/mautic:5-apache
 
-LABEL maintainer="MO Young Democrats"
+ARG MAUTIC_DB_HOST
+ARG MAUTIC_DB_USER
+ARG MAUTIC_DB_PASSWORD
+ARG MAUTIC_DB_NAME
+ARG MAUTIC_TRUSTED_PROXIES
+ARG MAUTIC_URL
+ARG MAUTIC_ADMIN_EMAIL
+ARG MAUTIC_ADMIN_PASSWORD
 
-# Fix Apache MPM conflict - forcefully remove all MPM symlinks and keep only prefork
-RUN rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf && \
-    apache2ctl configtest
-
-# PHP Configuration
-ENV PHP_INI_VALUE_MEMORY_LIMIT=512M
-ENV PHP_INI_VALUE_UPLOAD_MAX_FILESIZE=64M
-ENV PHP_INI_VALUE_POST_MAX_SIZE=64M
-ENV PHP_INI_VALUE_MAX_EXECUTION_TIME=300
-ENV PHP_INI_VALUE_DATE_TIMEZONE=America/Chicago
-
-# Mautic Configuration
-ENV DOCKER_MAUTIC_ROLE=mautic_web
-ENV MAUTIC_RUN_CRON_JOBS=true
-
-# Queue settings
-ENV MAUTIC_MESSENGER_DSN_EMAIL=doctrine://default
-ENV MAUTIC_MESSENGER_DSN_HIT=doctrine://default
-ENV MAUTIC_MESSENGER_DSN_FAILED=doctrine://default
-
-# Copy custom themes and plugins (if they exist)
-COPY --chown=www-data:www-data themes/ /var/www/html/docroot/themes/
-COPY --chown=www-data:www-data plugins/ /var/www/html/docroot/plugins/
-
-EXPOSE 80
+ENV MAUTIC_DB_HOST=$MAUTIC_DB_HOST
+ENV MAUTIC_DB_USER=$MAUTIC_DB_USER
+ENV MAUTIC_DB_PASSWORD=$MAUTIC_DB_PASSWORD
+ENV MAUTIC_DB_NAME=$MAUTIC_DB_NAME
+ENV MAUTIC_TRUSTED_PROXIES=$MAUTIC_TRUSTED_PROXIES
+ENV MAUTIC_URL=$MAUTIC_URL
+ENV MAUTIC_ADMIN_EMAIL=$MAUTIC_ADMIN_EMAIL
+ENV MAUTIC_ADMIN_PASSWORD=$MAUTIC_ADMIN_PASSWORD
+ENV PHP_INI_DATE_TIMEZONE='UTC'
