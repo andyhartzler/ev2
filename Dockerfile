@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y git && \
     cp /var/www/html/favicon.png /tmp/mautic-whitelabeler/assets/favicon.png && \
     # Run the whitelabeler (handles colors, logos, and company name safely)
     cd /tmp/mautic-whitelabeler && php cli.php --whitelabel && \
+    # Regenerate Mautic assets after whitelabeling (per Docker instructions)
+    cd /var/www/html && php bin/console mautic:assets:generate && \
     # Clean up
     apt-get remove -y git && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/mautic-whitelabeler /tmp/whitelabel-config.json && \
