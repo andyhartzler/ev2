@@ -1,8 +1,12 @@
 FROM mautic/mautic:latest
 
-# Fix Apache MPM conflict - disable event and worker MPMs, keep only prefork for mod_php
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork
+# Fix Apache MPM conflict at runtime (Railway/Heroku may inject configs)
+# This wrapper script removes conflicting MPM modules before Apache starts
+COPY fix-apache-mpm.sh /fix-apache-mpm.sh
+RUN chmod +x /fix-apache-mpm.sh
+
+# Override entrypoint to fix MPM before calling original entrypoint
+ENTRYPOINT ["/fix-apache-mpm.sh"]
 
 ARG MAUTIC_DB_HOST
 ARG MAUTIC_DB_PORT
