@@ -32,11 +32,8 @@ RUN apt-get update && apt-get install -y git && \
     cp /var/www/html/moyd-logo.png /tmp/mautic-whitelabeler/assets/sidebar_logo.png && \
     cp /var/www/html/moyd-logo.png /tmp/mautic-whitelabeler/assets/login_logo.png && \
     cp /var/www/html/favicon.png /tmp/mautic-whitelabeler/assets/favicon.png && \
-    # Run the whitelabeler
+    # Run the whitelabeler (handles colors, logos, and company name safely)
     cd /tmp/mautic-whitelabeler && php cli.php --whitelabel && \
-    # Change site title to "MOYD Mail"
-    find /var/www/html -name "*.php" -type f -exec sed -i 's/Mautic/MOYD Mail/g' {} + 2>/dev/null || true && \
-    find /var/www/html -name "*.twig" -type f -exec sed -i 's/Mautic/MOYD Mail/g' {} + 2>/dev/null || true && \
     # Clean up
     apt-get remove -y git && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/mautic-whitelabeler /tmp/whitelabel-config.json && \
