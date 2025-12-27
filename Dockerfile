@@ -3,9 +3,11 @@ FROM mautic/mautic:6-apache
 
 LABEL maintainer="MO Young Democrats"
 
-# Fix Apache MPM conflict - disable all MPMs except prefork
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork 2>/dev/null || true
+# Fix Apache MPM conflict - forcefully remove all MPM symlinks and keep only prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf && \
+    apache2ctl configtest
 
 # PHP Configuration
 ENV PHP_INI_VALUE_MEMORY_LIMIT=512M
