@@ -26,8 +26,14 @@ echo "[MOYD] Apache MPM fix applied."
 # 2. Auto-install Mautic if not installed
 # ========================================
 echo "[MOYD] Checking if auto-install is needed..."
+
+# Handle alternate variable names (Railway uses different names)
+MAUTIC_URL="${MAUTIC_URL:-$MAUTIC_SITE_URL}"
+MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-$MAUTIC_DB_DATABASE}"
+
 echo "[MOYD] MAUTIC_URL=${MAUTIC_URL:-not set}"
 echo "[MOYD] MAUTIC_DB_HOST=${MAUTIC_DB_HOST:-not set}"
+echo "[MOYD] MAUTIC_DB_NAME=${MAUTIC_DB_NAME:-not set}"
 echo "[MOYD] MAUTIC_ADMIN_PASSWORD is ${MAUTIC_ADMIN_PASSWORD:+set}${MAUTIC_ADMIN_PASSWORD:-not set}"
 
 # Check if Mautic is already installed
