@@ -32,6 +32,9 @@ echo "[MOYD] Checking if auto-install is needed..."
 export MAUTIC_URL="${MAUTIC_URL:-$MAUTIC_SITE_URL}"
 export MAUTIC_DB_NAME="${MAUTIC_DB_NAME:-$MAUTIC_DB_DATABASE}"
 
+# Set the Docker role for Mautic (required by official image)
+export DOCKER_MAUTIC_ROLE="${DOCKER_MAUTIC_ROLE:-mautic_web}"
+
 echo "[MOYD] Environment variables:"
 echo "[MOYD]   MAUTIC_URL=${MAUTIC_URL:-not set}"
 echo "[MOYD]   MAUTIC_DB_HOST=${MAUTIC_DB_HOST:-not set}"
@@ -40,6 +43,7 @@ echo "[MOYD]   MAUTIC_DB_NAME=${MAUTIC_DB_NAME:-not set}"
 echo "[MOYD]   MAUTIC_DB_USER=${MAUTIC_DB_USER:-not set}"
 echo "[MOYD]   MAUTIC_DB_PASSWORD=$([ -n "$MAUTIC_DB_PASSWORD" ] && echo '[SET]' || echo 'not set')"
 echo "[MOYD]   MAUTIC_ADMIN_PASSWORD=$([ -n "$MAUTIC_ADMIN_PASSWORD" ] && echo '[SET]' || echo 'not set')"
+echo "[MOYD]   DOCKER_MAUTIC_ROLE=${DOCKER_MAUTIC_ROLE}"
 
 # Check if Mautic is already installed
 NEEDS_INSTALL=false
@@ -115,28 +119,30 @@ if [ "$NEEDS_INSTALL" = true ]; then
             echo "[MOYD] Running automatic Mautic installation..."
             cd /var/www/html
 
-            # Run mautic:install
-            php bin/console mautic:install "$MAUTIC_URL" \
-                --db_host="${MAUTIC_DB_HOST}" \
-                --db_port="${MAUTIC_DB_PORT:-3306}" \
-                --db_name="${MAUTIC_DB_NAME}" \
-                --db_user="${MAUTIC_DB_USER}" \
-                --db_password="${MAUTIC_DB_PASSWORD}" \
-                --admin_email="${MAUTIC_ADMIN_EMAIL:-andrew@moyoungdemocrats.org}" \
-                --admin_password="${MAUTIC_ADMIN_PASSWORD}" \
-                --admin_firstname="${MAUTIC_ADMIN_FIRSTNAME:-Andrew}" \
-                --admin_lastname="${MAUTIC_ADMIN_LASTNAME:-Hartzler}" \
-                --admin_username="${MAUTIC_ADMIN_USERNAME:-admin}" \
-                --mailer_from_name="${MAUTIC_MAILER_FROM_NAME:-Missouri Young Democrats}" \
-                --mailer_from_email="${MAUTIC_ADMIN_EMAIL:-andrew@moyoungdemocrats.org}" \
-                --no-interaction 2>&1
+            # Run mautic:install as www-data user (required for proper file permissions)
+            # Note: Mautic 5.1+ requires complex passwords
+            su -s /bin/bash www-data -c "php bin/console mautic:install '$MAUTIC_URL' \
+                --db_host='${MAUTIC_DB_HOST}' \
+                --db_port='${MAUTIC_DB_PORT:-3306}' \
+                --db_name='${MAUTIC_DB_NAME}' \
+                --db_user='${MAUTIC_DB_USER}' \
+                --db_password='${MAUTIC_DB_PASSWORD}' \
+                --admin_email='${MAUTIC_ADMIN_EMAIL:-andrew@moyoungdemocrats.org}' \
+                --admin_password='${MAUTIC_ADMIN_PASSWORD}' \
+                --admin_firstname='${MAUTIC_ADMIN_FIRSTNAME:-Andrew}' \
+                --admin_lastname='${MAUTIC_ADMIN_LASTNAME:-Hartzler}' \
+                --admin_username='${MAUTIC_ADMIN_USERNAME:-admin}' \
+                --mailer_from_name='${MAUTIC_MAILER_FROM_NAME:-Missouri Young Democrats}' \
+                --mailer_from_email='${MAUTIC_ADMIN_EMAIL:-andrew@moyoungdemocrats.org}' \
+                --no-interaction" 2>&1
 
-            if [ $? -eq 0 ]; then
+            INSTALL_RESULT=$?
+            if [ $INSTALL_RESULT -eq 0 ]; then
                 echo "[MOYD] Mautic installation completed successfully!"
                 # Clear cache after install
-                php bin/console cache:clear 2>/dev/null || true
+                su -s /bin/bash www-data -c "php bin/console cache:clear" 2>/dev/null || true
             else
-                echo "[MOYD] Mautic installation failed. Check the logs above for errors."
+                echo "[MOYD] Mautic installation failed (exit code: $INSTALL_RESULT). Check the logs above for errors."
             fi
         else
             echo "[MOYD] MySQL connection timed out after $MAX_TRIES attempts."
@@ -147,5 +153,14 @@ fi
 # ========================================
 # 3. Call the original mautic entrypoint
 # ========================================
-echo "[MOYD] Calling original Mautic entrypoint..."
-exec /entrypoint.sh "$@"
+echo "[MOYD] Calling original Mautic entrypoint (/docker-entrypoint.sh)..."
+
+# Check which entrypoint exists
+if [ -f /docker-entrypoint.sh ]; then
+    exec /docker-entrypoint.sh "$@"
+elif [ -f /entrypoint.sh ]; then
+    exec /entrypoint.sh "$@"
+else
+    echo "[MOYD] ERROR: No entrypoint found! Starting Apache directly..."
+    exec apache2-foreground
+fi
