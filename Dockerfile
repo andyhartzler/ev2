@@ -1,11 +1,22 @@
 FROM mautic/mautic:latest
 
-# Fix Apache MPM conflict - forcefully remove all MPM modules and enable only prefork
-RUN rm -f /etc/apache2/mods-enabled/mpm_* && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf && \
-    apache2ctl configtest
+ARG MAUTIC_DB_HOST
+ARG MAUTIC_DB_PORT
+ARG MAUTIC_DB_USER
+ARG MAUTIC_DB_PASSWORD
+ARG MAUTIC_DB_NAME
+ARG MAUTIC_TRUSTED_PROXIES
+ARG MAUTIC_URL
+ARG MAUTIC_ADMIN_EMAIL
+ARG MAUTIC_ADMIN_PASSWORD
 
-# Set required environment variables
+ENV MAUTIC_DB_HOST=$MAUTIC_DB_HOST
+ENV MAUTIC_DB_PORT=$MAUTIC_DB_PORT
+ENV MAUTIC_DB_USER=$MAUTIC_DB_USER
+ENV MAUTIC_DB_PASSWORD=$MAUTIC_DB_PASSWORD
+ENV MAUTIC_DB_NAME=$MAUTIC_DB_NAME
+ENV MAUTIC_TRUSTED_PROXIES=$MAUTIC_TRUSTED_PROXIES
+ENV MAUTIC_URL=$MAUTIC_URL
+ENV MAUTIC_ADMIN_EMAIL=$MAUTIC_ADMIN_EMAIL
+ENV MAUTIC_ADMIN_PASSWORD=$MAUTIC_ADMIN_PASSWORD
 ENV PHP_INI_DATE_TIMEZONE='UTC'
-ENV DOCKER_MAUTIC_ROLE=mautic_web
