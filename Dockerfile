@@ -1,26 +1,18 @@
 FROM mautic/mautic:latest
 
 # ============================================
-# CUSTOM ENTRYPOINT WRAPPER
-# Instead of using ENTRYPOINT directive (which Railway may override),
-# we REPLACE the actual entrypoint file so our code always runs
+# FIX APACHE MPM CONFLICT AT BUILD TIME
+# This MUST be done before Apache starts
 # ============================================
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.load \
+          /etc/apache2/mods-enabled/mpm_event.conf \
+          /etc/apache2/mods-enabled/mpm_worker.load \
+          /etc/apache2/mods-enabled/mpm_worker.conf && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf
 
-# First, save the original entrypoint
-RUN if [ -f /docker-entrypoint.sh ]; then \
-        cp /docker-entrypoint.sh /docker-entrypoint-original.sh && \
-        chmod +x /docker-entrypoint-original.sh; \
-    fi
-
-# Copy our wrapper script
-COPY docker-entrypoint-wrapper.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh && \
-    sed -i 's/\r$//' /docker-entrypoint.sh
-
-# Set timezone
+# Set timezone and role
 ENV PHP_INI_DATE_TIMEZONE='UTC'
-
-# Set default role for Mautic
 ENV DOCKER_MAUTIC_ROLE=mautic_web
 
 # ============================================
