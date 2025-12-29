@@ -1,11 +1,12 @@
 FROM mautic/mautic:latest
 
-# Fix Apache MPM conflict - remove mpm_event and mpm_worker config files, keep only mpm_prefork
-# Apache only allows one MPM module at a time (required for PHP with mod_php)
-RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
-          /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
-    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
+# Copy custom entrypoint wrapper that fixes Apache MPM conflict at runtime
+# This is needed because Railway/Heroku may inject Apache config after build
+COPY fix-apache-mpm.sh /fix-apache-mpm.sh
+RUN chmod +x /fix-apache-mpm.sh
+
+# Override entrypoint to use our wrapper script
+ENTRYPOINT ["/fix-apache-mpm.sh"]
 
 ARG MAUTIC_DB_HOST
 ARG MAUTIC_DB_PORT
