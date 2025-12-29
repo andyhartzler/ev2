@@ -1,5 +1,10 @@
 FROM mautic/mautic:latest
 
+# Fix Apache MPM conflict - disable mpm_event and mpm_worker, enable only mpm_prefork
+# (required for PHP with mod_php)
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
+    a2enmod mpm_prefork 2>/dev/null || true
+
 ARG MAUTIC_DB_HOST
 ARG MAUTIC_DB_PORT
 ARG MAUTIC_DB_USER
