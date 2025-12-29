@@ -1,9 +1,11 @@
 FROM mautic/mautic:latest
 
-# Fix Apache MPM conflict - disable mpm_event and mpm_worker, enable only mpm_prefork
-# (required for PHP with mod_php)
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork 2>/dev/null || true
+# Fix Apache MPM conflict - remove mpm_event and mpm_worker config files, keep only mpm_prefork
+# Apache only allows one MPM module at a time (required for PHP with mod_php)
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+          /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
+    ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
 
 ARG MAUTIC_DB_HOST
 ARG MAUTIC_DB_PORT
